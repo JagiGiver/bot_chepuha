@@ -2,6 +2,7 @@
 from telegram.ext import CommandHandler, MessageHandler, filters, ApplicationBuilder, CallbackQueryHandler
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 import random
+import os
 
 games = {}
 questions = [
@@ -20,10 +21,8 @@ def find_game(player_id):
             return key
     return None
 
-def make_story(games, key):
-    # составляем историю из ответов игроков
+def make_story(games, key, players):
     story = ""
-    players = games[key]['players']
     for i, question in enumerate(questions):
         player = players[i % len(players)]
         answer = games[key]['answers'][player][i]
@@ -68,7 +67,7 @@ async def button(update, context):
             "4. Все отвечают на вопросы не видя ответов других\n"
             "5. В конце получается смешная история!\n\n"
             "Вопросы: Кто? С кем? Когда? Где? Что делали? Зачем? Что получилось?"
-        )   
+        )
 
     elif data == 'join':
         context.user_data['state'] = 'waiting_for_key'
@@ -83,23 +82,31 @@ async def button(update, context):
                 chat_id=player_id,
                 text=f"Игра началась! Первый вопрос: {questions[0]}"
             )
-            
 
     elif data.startswith("story_"):
-        # показываем историю когда нажимают кнопку
         key = int(data.split("_")[1])
         index = int(data.split("_")[2])
         if key in games and 'stories' in games[key]:
             await update.callback_query.message.reply_text(
                 f"📖 История {index + 1}:\n\n{games[key]['stories'][index]}"
             )
+            player_id = update.callback_query.from_user.id
+            games[key].setdefault('viewed', {})
+            games[key]['viewed'].setdefault(player_id, set())
+            games[key]['viewed'][player_id].add(index)
 
+            total_players = len(games[key]['players'])
+            all_viewed = (
+                len(games[key]['viewed']) == total_players and
+                all(len(v) == len(games[key]['stories']) for v in games[key]['viewed'].values())
+            )
+            if all_viewed:
+                del games[key]
 
 async def receive_key(update, context):
     state = context.user_data.get('state')
 
     if state == 'waiting_for_key':
-        # проверяем что введено число
         if not update.message.text.isdigit():
             await update.message.reply_text('Введите числовой код!')
             return
@@ -112,7 +119,6 @@ async def receive_key(update, context):
                 games[key]['names'][player_id] = name
                 context.user_data['state'] = None
                 host_id = games[key]['host_id']
-                # список всех игроков для хоста
                 names_list = "\n".join(games[key]['names'].values())
                 await update.message.reply_text('Добро пожаловать в игру!')
                 await context.bot.send_message(
@@ -129,7 +135,6 @@ async def receive_key(update, context):
         key = find_game(player_id)
         current_q = games[key]['current_question']
 
-        # проверяем что игрок ещё не ответил на этот вопрос
         if len(games[key]['answers'][player_id]) > current_q:
             await update.message.reply_text('Ты уже ответил на этот вопрос!')
             return
@@ -150,14 +155,13 @@ async def receive_key(update, context):
                         text=f"Следующий вопрос: {questions[next_q]}"
                     )
             else:
-                # генерируем 3 разные истории
                 stories = []
                 for _ in range(3):
-                    random.shuffle(games[key]['players'])
-                    stories.append(make_story(games, key))
+                    players_copy = games[key]['players'].copy()
+                    random.shuffle(players_copy)
+                    stories.append(make_story(games, key, players_copy))
                 games[key]['stories'] = stories
 
-                # кнопки для выбора истории
                 keyboard = [
                     [InlineKeyboardButton(f"История {i+1}", callback_data=f"story_{key}_{i}")]
                     for i in range(len(stories))
@@ -168,17 +172,10 @@ async def receive_key(update, context):
                         text="🎉 Игра окончена! Выбери историю:",
                         reply_markup=InlineKeyboardMarkup(keyboard)
                     )
-                
-import os
+
 app = ApplicationBuilder().token(os.environ["TOKEN"]).build()
 app.add_handler(CommandHandler("start", start))
 app.add_handler(CallbackQueryHandler(button))
 app.add_handler(MessageHandler(filters.TEXT, receive_key))
-
 print("Бот запущен")
 app.run_polling()
-
-
-
-
-
