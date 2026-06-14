@@ -156,7 +156,7 @@ async def receive_key(update, context):
                     )
             else:
                 stories = []
-                for _ in range(3):
+                for _ in range(len(games[key]['players'])):
                     players_copy = games[key]['players'].copy()
                     random.shuffle(players_copy)
                     stories.append(make_story(games, key, players_copy))
