@@ -83,8 +83,8 @@ async def button(update, context):
                 chat_id=player_id,
                 text=f"Игра началась! Первый вопрос: {questions[0]}"
             )
-            del games[key] 
             
+
     elif data.startswith("story_"):
         # показываем историю когда нажимают кнопку
         key = int(data.split("_")[1])
@@ -93,6 +93,7 @@ async def button(update, context):
             await update.callback_query.message.reply_text(
                 f"📖 История {index + 1}:\n\n{games[key]['stories'][index]}"
             )
+            del games[key] 
 
 async def receive_key(update, context):
     state = context.user_data.get('state')
