@@ -93,7 +93,7 @@ async def button(update, context):
             await update.callback_query.message.reply_text(
                 f"📖 История {index + 1}:\n\n{games[key]['stories'][index]}"
             )
-            del games[key] 
+
 
 async def receive_key(update, context):
     state = context.user_data.get('state')
