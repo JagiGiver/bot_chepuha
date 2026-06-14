@@ -166,12 +166,12 @@ async def receive_key(update, context):
                         text="🎉 Игра окончена! Выбери историю:",
                         reply_markup=InlineKeyboardMarkup(keyboard)
                     )
-
+import os
+app = ApplicationBuilder().token(os.environ["TOKEN"]).build()
 app.add_handler(CommandHandler("start", start))
 app.add_handler(CallbackQueryHandler(button))
 
-import os
-app = ApplicationBuilder().token(os.environ["TOKEN"]).build()
+
 print("Бот запущен")
 app.run_polling()
 
