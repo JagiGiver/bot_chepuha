@@ -166,6 +166,7 @@ async def receive_key(update, context):
                         text="🎉 Игра окончена! Выбери историю:",
                         reply_markup=InlineKeyboardMarkup(keyboard)
                     )
+                del games[key]
 import os
 app = ApplicationBuilder().token(os.environ["TOKEN"]).build()
 app.add_handler(CommandHandler("start", start))
