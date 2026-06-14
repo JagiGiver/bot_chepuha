@@ -83,7 +83,8 @@ async def button(update, context):
                 chat_id=player_id,
                 text=f"Игра началась! Первый вопрос: {questions[0]}"
             )
-
+            del games[key] 
+            
     elif data.startswith("story_"):
         # показываем историю когда нажимают кнопку
         key = int(data.split("_")[1])
@@ -166,7 +167,7 @@ async def receive_key(update, context):
                         text="🎉 Игра окончена! Выбери историю:",
                         reply_markup=InlineKeyboardMarkup(keyboard)
                     )
-                del games[key]
+                
 import os
 app = ApplicationBuilder().token(os.environ["TOKEN"]).build()
 app.add_handler(CommandHandler("start", start))
